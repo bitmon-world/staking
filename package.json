@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "admin": "ts-node client/admin.ts"
+    "admin": "ts-node client/admin.ts",
+    "format": "prettier --write index.ts"
   },
   "dependencies": {
     "@project-serum/anchor": "0.17.1-beta.1",
@@ -29,6 +30,7 @@
     "plotly.js-dist-min": "2.5.1",
     "react-plotly.js": "2.5.1",
     "ts-mocha": "8.0.0",
+    "dotenv": "16.0.1",
     "yaml": "1.10.2"
   },
   "devDependencies": {
