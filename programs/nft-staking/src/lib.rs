@@ -162,6 +162,8 @@ pub mod nft_staking {
         Ok(())
     }
 
+
+
     // add funder
     pub fn authorize_funder(ctx: Context<FunderChange>, funder_to_add: Pubkey) -> ProgramResult {
         // owner cannot be added into funders
@@ -192,6 +194,50 @@ pub mod nft_staking {
         } else {
             return Err(ErrorCode::CannotDeauthorizeMissingAuthority.into());
         }
+        Ok(())
+    }
+
+    pub fn reset_user(ctx: Context<ResetUser>) -> ProgramResult {
+        let clock = clock::Clock::get().unwrap();
+        let now = clock.unix_timestamp.try_into().unwrap();
+        let user_account = &mut ctx.accounts.user_account;
+        user_account.reward_earned_pending = 0;
+        user_account.last_update_time = now;
+        Ok(())
+    }
+
+    pub fn reset_pool(ctx: Context<ResetPool>) -> ProgramResult {
+        let pool_account = &mut ctx.accounts.pool_account;
+
+        let (_pool_pda, pool_bump) = Pubkey::find_program_address(&[PREFIX.as_bytes(),
+            pool_account.authority.as_ref(),
+            pool_account.config.as_ref(),
+        ], ctx.program_id);
+
+        let seeds = &[PREFIX.as_bytes(),
+                pool_account.authority.as_ref(),
+                pool_account.config.as_ref(),
+            &[pool_bump]]; // need this to sign the pda, match the authority
+
+        let token_program = ctx.accounts.token_program.clone();
+        let token_accounts = anchor_spl::token::Transfer {
+            from: ctx.accounts.reward_vault.to_account_info().clone(),
+            to: ctx.accounts.receiver_vault.to_account_info().clone(),
+            authority: pool_account.to_account_info().clone(),
+        };
+        let cpi_ctx = CpiContext::new(token_program, token_accounts);
+        msg!("Calling the token program to transfer reward {} to the user", ctx.accounts.reward_vault.amount);
+        anchor_spl::token::transfer(
+            cpi_ctx.with_signer(&[&seeds[..]]),
+            ctx.accounts.reward_vault.amount,
+         )?;
+
+         let now = clock::Clock::get().unwrap().unix_timestamp.try_into().unwrap();
+
+         msg!("Reset last_update_time and reward_duration_end to {}", now);
+         pool_account.last_update_time = now; // update last update time as current time
+         pool_account.reward_duration_end = now; // refresh the reward end period time
+ 
         Ok(())
     }
 
@@ -667,6 +713,48 @@ pub struct FunderChange<'info> {
     )]
     pool_account: ProgramAccount<'info, Pool>,
 }
+
+#[derive(Accounts)]
+pub struct ResetUser<'info> {
+    #[account(mut, signer)]
+    authority: AccountInfo<'info>,
+
+    #[account(mut,
+    constraint = pool_account.is_initialized == true,
+    has_one = authority,
+    )]
+    pool_account: ProgramAccount<'info, Pool>,
+
+    // user account
+    // verify pool is the pool account
+    #[account(
+    mut,
+    constraint = user_account.pool == * pool_account.to_account_info().key,
+    )]
+    user_account: ProgramAccount<'info, User>,
+}
+
+#[derive(Accounts)]
+pub struct ResetPool<'info> {
+    #[account(mut, signer)]
+    authority: AccountInfo<'info>,
+
+    #[account(mut,
+    constraint = pool_account.is_initialized == true,
+    has_one = authority,
+    )]
+    pool_account: ProgramAccount<'info, Pool>,
+
+    #[account(mut)]
+    reward_vault: Box<Account<'info, TokenAccount>>,
+
+    #[account(mut)]
+    receiver_vault: Account<'info, TokenAccount>,
+
+    #[account(address = spl_token::id())]
+    token_program: AccountInfo<'info>,
+}
+
 
 #[derive(Accounts)]
 pub struct Fund<'info> {
