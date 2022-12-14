@@ -5,11 +5,11 @@ members = ["programs/nft-staking"]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "mainnet"
-wallet = "./staking-wallet.json"
+cluster = "devnet"
+wallet = "/Users/luiscorreamoran/.config/solana/id.json"
 
-[programs.mainnet]
-nft_staking = "JCnPzmQxxP6XTJAj5nf173Rk5rxtag5dQjgvsb9tQDYA"
+[programs.devnet]
+nft_staking = "4Kqy9CvFmzSYBNzjUG6aEKvdEh7Pon8QdUxKgKaQxMeg"
 
 [scripts]
 test = "ts-mocha --path tsconfig.json -t 1000000 tests/nft-staking/*.ts"

@@ -16,7 +16,7 @@ const PREFIX_MINT: &str = "nft_staking_mint";
 const PREFIX_UNSTAKE_PROOF: &str = "nft_unstake_proof";
 const PRECISION: u128 = u64::MAX as u128;
 
-declare_id!("JCnPzmQxxP6XTJAj5nf173Rk5rxtag5dQjgvsb9tQDYA");
+declare_id!("4Kqy9CvFmzSYBNzjUG6aEKvdEh7Pon8QdUxKgKaQxMeg");
 
 pub mod constants {
     pub const MIN_DURATION: u64 = 1;
