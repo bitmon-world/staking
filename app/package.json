@@ -6,7 +6,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "initialize": "node initialize.js"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.25.0",
