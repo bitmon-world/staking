@@ -100,10 +100,14 @@ const main = async() => {
 
 
     const configAccountKeypair = Keypair.generate();
+    const configAccountSize = 8 + // discriminator
+        32 + // authority
+        4 + 6 + // uuid + u32 le
+        4; // num_mint
 
-    const [configAccount, _] = await getConfigAccount(
-        configAccountKeypair.publicKey
-    )
+    // const [configAccount, _] = await getConfigAccount(
+    //     configAccountKeypair.publicKey
+    // )
 
 
     const [poolAccount, _pool_bump] =
@@ -112,6 +116,7 @@ const main = async() => {
             authorityWallet.publicKey,
             program.programId
         )
+
 
     const [rewardVaultAccount, _reward_bump] =
         await getRewardVaultAddress(
@@ -127,7 +132,24 @@ const main = async() => {
     let rewardDuration = new BN("31536000")
     let unstakeDuration = new BN(0)
 
+    let lamports =  1266720;
+
+    //     await connection.getMinimumBalanceForRentExemption(
+    //     configAccountSize
+    // )
+    // console.log(lamports)
+
     let tx =  new Transaction();
+
+    tx.add(
+        SystemProgram.createAccount({
+            fromPubkey: authorityWallet.publicKey,
+            newAccountPubkey: configAccountKeypair.publicKey,
+            lamports: lamports,
+            space: configAccountSize,
+            programId: program.programId,
+        })
+    );
 
     tx.add(program.instruction.initializePool(
         uuid,
@@ -140,30 +162,32 @@ const main = async() => {
             accounts: {
                 authority: authorityWallet.publicKey,
                 poolAccount: poolAccount,
-                config: configAccount,
+                config: configAccountKeypair.publicKey,
                 rewardMint: new PublicKey("ABJ3xqPVskEUsfxGiA4KDxmWzHj9YCL27zW33tzEEjo4"),
                 rewardVault: rewardVaultAccount,
                 rent: SYSVAR_RENT_PUBKEY,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId
             },
-            signers: [
-                authorityWallet,
-                configAccountKeypair
-            ],
+            // instructions: [
+            //     await program.account.config.createInstruction(configAccountKeypair.publicKey),
+            // ],
+            // signers: [
+            //     configAccountKeypair
+            // ],
         }
     ))
     const signature = await sendAndConfirmTransaction(
         connection,
         tx,
-        [authorityWallet],
+        [authorityWallet, configAccountKeypair],
         {commitment: 'confirmed'}
 
 
     );
     console.log('SIGNATURE', signature);
 
-
 }
 
 main()
+
